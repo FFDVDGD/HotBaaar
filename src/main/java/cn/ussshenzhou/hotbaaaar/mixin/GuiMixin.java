@@ -3,6 +3,7 @@ package cn.ussshenzhou.hotbaaaar.mixin;
 import cn.ussshenzhou.hotbaaaar.client.HotbaaaarClient;
 import cn.ussshenzhou.hotbaaaar.util.Util;
 import net.minecraft.client.AttackIndicatorStatus;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
@@ -19,10 +20,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Renders the extended hotbar on the 1.20.x {@link GuiGraphics} API: up to four 9-slot rows laid out
- * as one wide strip, items drawn at fixed logical positions (see {@link HotbaaaarClient}). Faithfully
- * reproduces the vanilla hotbar (background, selection frame, offhand slot, attack indicator)
- * generalised to N rows. Still uses the {@code widgets.png}/{@code icons.png} atlases (1.20.1).
+ * Renders the extended hotbar on the 1.21.x sprite API: up to four 9-slot rows as one wide strip,
+ * items drawn at fixed logical positions (see {@link HotbaaaarClient}). Faithfully reproduces the
+ * vanilla hotbar (background, selection frame, offhand slot, attack indicator) generalised to N rows.
  *
  * @author USS_Shenzhou
  */
@@ -37,10 +37,10 @@ public abstract class GuiMixin {
     protected abstract Player getCameraPlayer();
 
     @Shadow
-    protected abstract void renderSlot(GuiGraphics guiGraphics, int x, int y, float partialTick, Player player, ItemStack stack, int seed);
+    protected abstract void renderSlot(GuiGraphics guiGraphics, int x, int y, DeltaTracker deltaTracker, Player player, ItemStack stack, int seed);
 
     @Inject(method = "renderHotbar", at = @At("HEAD"), cancellable = true)
-    private void hotbaaaar$renderHotbar(float partialTick, GuiGraphics guiGraphics, CallbackInfo ci) {
+    private void hotbaaaar$renderHotbar(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
         Player player = this.getCameraPlayer();
         if (player == null) {
             return;
@@ -49,8 +49,8 @@ public abstract class GuiMixin {
         Inventory inv = player.getInventory();
         int rows = HotbaaaarClient.getRows();
 
-        int screenWidth = this.minecraft.getWindow().getGuiScaledWidth();
-        int screenHeight = this.minecraft.getWindow().getGuiScaledHeight();
+        int screenWidth = guiGraphics.guiWidth();
+        int screenHeight = guiGraphics.guiHeight();
         ItemStack offhand = player.getOffhandItem();
         HumanoidArm offhandArm = player.getMainArm().getOpposite();
 
@@ -63,19 +63,19 @@ public abstract class GuiMixin {
 
         // backgrounds
         for (int i = 0; i < rows; i++) {
-            guiGraphics.blit(Util.WIDGETS_LOCATION, x0 + i * oneHotbar, screenHeight - height, 0, 0, oneHotbar, height);
+            guiGraphics.blitSprite(Util.HOTBAR_SPRITE, x0 + i * oneHotbar, screenHeight - height, oneHotbar, height);
         }
 
         // selection frame at the logical selected slot
         int logicalSelected = Mth.clamp(HotbaaaarClient.getActiveLogicalRow(), 0, rows - 1) * 9 + inv.selected;
-        guiGraphics.blit(Util.WIDGETS_LOCATION, x0 - 1 + logicalSelected * 20 + (logicalSelected / 9 * 2), screenHeight - height - 1, 0, 22, 24, 22);
+        guiGraphics.blitSprite(Util.HOTBAR_SELECTION_SPRITE, x0 - 1 + logicalSelected * 20 + (logicalSelected / 9 * 2), screenHeight - height - 1, 24, 23);
 
         // offhand frame
         if (!offhand.isEmpty()) {
             if (offhandArm == HumanoidArm.LEFT) {
-                guiGraphics.blit(Util.WIDGETS_LOCATION, x0 - 29, screenHeight - 23, 24, 22, 29, 24);
+                guiGraphics.blitSprite(Util.HOTBAR_OFFHAND_LEFT_SPRITE, x0 - 29, screenHeight - 23, 29, 24);
             } else {
-                guiGraphics.blit(Util.WIDGETS_LOCATION, x1, screenHeight - 23, 53, 22, 29, 24);
+                guiGraphics.blitSprite(Util.HOTBAR_OFFHAND_RIGHT_SPRITE, x1, screenHeight - 23, 29, 24);
             }
         }
 
@@ -87,16 +87,16 @@ public abstract class GuiMixin {
             int physicalSlot = HotbaaaarClient.physicalRowOfLogical(logicalRow) * 9 + col;
             int x = x0 + i * 20 + 3 + (i / 9 * 2);
             int y = screenHeight - 16 - 3;
-            this.renderSlot(guiGraphics, x, y, partialTick, player, inv.items.get(physicalSlot), seed++);
+            this.renderSlot(guiGraphics, x, y, deltaTracker, player, inv.items.get(physicalSlot), seed++);
         }
 
         // offhand item
         if (!offhand.isEmpty()) {
             int y = screenHeight - 16 - 3;
             if (offhandArm == HumanoidArm.LEFT) {
-                this.renderSlot(guiGraphics, x0 - 26, y, partialTick, player, offhand, seed++);
+                this.renderSlot(guiGraphics, x0 - 26, y, deltaTracker, player, offhand, seed++);
             } else {
-                this.renderSlot(guiGraphics, x1 + 10, y, partialTick, player, offhand, seed++);
+                this.renderSlot(guiGraphics, x1 + 10, y, deltaTracker, player, offhand, seed++);
             }
         }
 
@@ -107,8 +107,8 @@ public abstract class GuiMixin {
                 int y = screenHeight - 20;
                 int x = (offhandArm == HumanoidArm.RIGHT) ? x0 - 22 : x1 + 6;
                 int progress = (int) (scale * 19.0F);
-                guiGraphics.blit(Util.GUI_ICONS_LOCATION, x, y, 36, 94, 18, 18);
-                guiGraphics.blit(Util.GUI_ICONS_LOCATION, x, y + 18 - progress, 52, 94 + 18 - progress, 18, progress);
+                guiGraphics.blitSprite(Util.HOTBAR_ATTACK_INDICATOR_BACKGROUND_SPRITE, x, y, 18, 18);
+                guiGraphics.blitSprite(Util.HOTBAR_ATTACK_INDICATOR_PROGRESS_SPRITE, 18, 18, 0, 18 - progress, x, y + 18 - progress, 18, progress);
             }
         }
 
