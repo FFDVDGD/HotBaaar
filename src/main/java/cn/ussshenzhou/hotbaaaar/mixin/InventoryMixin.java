@@ -9,8 +9,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Replaces the client-side mouse-wheel hotbar selection with the row-flipping logic. Vanilla
- * {@code swapPaint} only ever runs on the client (from {@code MouseHandler#onScroll}); the guard
- * keeps us off any logical server just in case.
+ * {@code swapPaint} is only ever called on the client (from {@code MouseHandler#onScroll}) against the
+ * local player's inventory, and {@link HotbaaaarClient#onScroll} guards on {@code Minecraft.player},
+ * so no extra side check is needed here.
  *
  * @author USS_Shenzhou
  */
@@ -19,10 +20,7 @@ public class InventoryMixin {
 
     @Inject(method = "swapPaint", at = @At("HEAD"), cancellable = true)
     private void hotbaaaar$swapPaint(double direction, CallbackInfo ci) {
-        Inventory self = (Inventory) (Object) this;
-        if (self.player.level.isClientSide) {
-            HotbaaaarClient.onScroll(direction);
-            ci.cancel();
-        }
+        HotbaaaarClient.onScroll(direction);
+        ci.cancel();
     }
 }
