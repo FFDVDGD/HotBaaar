@@ -60,7 +60,13 @@ jobs:
       - name: Build
         run: |
           chmod +x ./gradlew
-          ./gradlew build --no-daemon --stacktrace
+          # Combine this branch's "<mcver>-<loader>" prefix with the release tag version so the jar is
+          # named e.g. hotbaaaar-1.21.1-forge-1.0.0.jar. -P overrides gradle.properties mod_version.
+          base="$(grep '^mod_version=' gradle.properties | cut -d= -f2)"
+          base="${base%-*}"
+          version="${GITHUB_REF_NAME#v}"
+          echo "Building ${base} @ ${version}"
+          ./gradlew build --no-daemon --stacktrace -Pmod_version="${base}-${version}"
 
       - name: Compute artifact name
         id: meta
