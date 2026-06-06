@@ -1,6 +1,6 @@
 {
   "pack": {
-    "description": "hooootbar resources",
-    "pack_format": 26
+    "description": "${mod_name} resources",
+    "pack_format": 9
   }
 }

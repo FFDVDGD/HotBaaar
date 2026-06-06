@@ -1,34 +1,28 @@
 package cn.ussshenzhou.hotbaaaar.mixin;
 
-import cn.ussshenzhou.hotbaaaar.network.DisplayResolutionPacket;
-import com.llamalad7.mixinextras.sugar.Local;
+import cn.ussshenzhou.hotbaaaar.client.HotbaaaarClient;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientPacketListener;
-import net.minecraft.world.entity.player.Inventory;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
-import org.jspecify.annotations.Nullable;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
+ * When any container screen opens (player inventory, chest, ...) the player may rearrange items, so we
+ * reset the internal logical-to-physical map to match the real inventory order. This does not move any
+ * items; it just prevents the swap bookkeeping from desyncing the rendered view.
+ *
  * @author USS_Shenzhou
  */
 @Mixin(Minecraft.class)
-public abstract class MinecraftMixin {
+public class MinecraftMixin {
 
-    @Shadow
-    @Nullable
-    public abstract ClientPacketListener getConnection();
-
-    @Inject(method = "resizeGui", at = @At("RETURN"))
-    private void hotbaaaarSendNewSizeToServer(CallbackInfo ci) {
-        if (this.getConnection() != null) {
-            ClientPacketDistributor.sendToServer(new DisplayResolutionPacket(Minecraft.getInstance().getWindow().getGuiScaledWidth()));
+    @Inject(method = "setScreen", at = @At("HEAD"))
+    private void hotbaaaar$onSetScreen(Screen screen, CallbackInfo ci) {
+        if (screen instanceof AbstractContainerScreen) {
+            HotbaaaarClient.resetMapping();
         }
     }
 }

@@ -1,113 +1,131 @@
 package cn.ussshenzhou.hotbaaaar.mixin;
 
+import cn.ussshenzhou.hotbaaaar.client.HotbaaaarClient;
+import cn.ussshenzhou.hotbaaaar.util.Util;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.AttackIndicatorStatus;
-import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.gui.GuiComponent;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
-
-import static cn.ussshenzhou.hotbaaaar.util.Util.*;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
+ * Renders the extended hotbar: up to four 9-slot rows laid out as one wide strip, with items drawn at
+ * fixed logical positions (see {@link HotbaaaarClient}). Faithfully reproduces the vanilla 1.19.2
+ * hotbar (background, selection frame, offhand slot, attack indicator) generalised to N rows.
+ *
  * @author USS_Shenzhou
  */
 @Mixin(Gui.class)
-public abstract class GuiMixin {
+public abstract class GuiMixin extends GuiComponent {
 
     @Shadow
     @Final
     private Minecraft minecraft;
 
     @Shadow
-    @Nullable
+    private int screenWidth;
+
+    @Shadow
+    private int screenHeight;
+
+    @Shadow
     protected abstract Player getCameraPlayer();
 
     @Shadow
-    protected abstract void extractSlot(GuiGraphicsExtractor graphics, int x, int y, DeltaTracker deltaTracker, Player player, ItemStack itemStack, int seed);
+    protected abstract void renderSlot(int x, int y, float partialTick, Player player, ItemStack stack, int seed);
 
-    /**
-     * @author USS_Shenzhou
-     * @reason Inject at HEAD would do the same, but overwrite is cheaper and more convenient.
-     */
-    @Overwrite
-    private void extractItemHotbar(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+    @Inject(method = "renderHotbar", at = @At("HEAD"), cancellable = true)
+    private void hotbaaaar$renderHotbar(float partialTick, PoseStack poseStack, CallbackInfo ci) {
         Player player = this.getCameraPlayer();
-        if (player != null) {
-            ItemStack offhand = player.getOffhandItem();
-            HumanoidArm offhandArm = player.getMainArm().getOpposite();
-            int screenCenter = graphics.guiWidth() / 2;
-            final int oneHotbarLength = 182;
-            final int halfHotbar = 91;
-            final int hotbarHeight = 22;
-            int hotbarAmount = Mth.clamp(graphics.guiWidth() / oneHotbarLength, 1, 4);
-            int x0 = screenCenter - hotbarAmount * halfHotbar;
-            int x1 = x0 + hotbarAmount * oneHotbarLength;
-            //render background-----
-            for (int i = 0; i < hotbarAmount; i++) {
-                graphics.blitSprite(RenderPipelines.GUI_TEXTURED, HOTBAR_SPRITE, x0 + i * oneHotbarLength, graphics.guiHeight() - hotbarHeight, oneHotbarLength, hotbarHeight);
-            }
-            //render select frame-----
-            graphics.blitSprite(
-                    RenderPipelines.GUI_TEXTURED,
-                    HOTBAR_SELECTION_SPRITE,
-                    x0 - 1 + player.getInventory().getSelectedSlot() * 20 + (player.getInventory().getSelectedSlot() / 9 * 2),
-                    graphics.guiHeight() - 22 - 1,
-                    24,
-                    23
-            );
-            //render offhand-----
-            if (!offhand.isEmpty()) {
-                if (offhandArm == HumanoidArm.LEFT) {
-                    graphics.blitSprite(RenderPipelines.GUI_TEXTURED, HOTBAR_OFFHAND_LEFT_SPRITE, x0 - 29, graphics.guiHeight() - 23, 29, 24);
-                } else {
-                    graphics.blitSprite(RenderPipelines.GUI_TEXTURED, HOTBAR_OFFHAND_RIGHT_SPRITE, x1 + halfHotbar, graphics.guiHeight() - 23, 29, 24);
-                }
-            }
+        if (player == null) {
+            return;
+        }
+        HotbaaaarClient.tickSanity();
+        Inventory inv = player.getInventory();
+        int rows = HotbaaaarClient.getRows();
 
-            //render items-----
-            int seed = 1;
-            for (int i = 0; i < hotbarAmount * 9; i++) {
-                int x = x0 + i * 20 + 3 + (i / 9 * 2);
-                int y = graphics.guiHeight() - 16 - 3;
-                this.extractSlot(graphics, x, y, deltaTracker, player, player.getInventory().getItem(i), seed++);
-            }
+        ItemStack offhand = player.getOffhandItem();
+        HumanoidArm offhandArm = player.getMainArm().getOpposite();
 
-            //render offhand item-----
-            if (!offhand.isEmpty()) {
-                int y = graphics.guiHeight() - 16 - 3;
-                if (offhandArm == HumanoidArm.LEFT) {
-                    this.extractSlot(graphics, x0 - 26, y, deltaTracker, player, offhand, seed++);
-                } else {
-                    this.extractSlot(graphics, x1 + 10, y, deltaTracker, player, offhand, seed++);
-                }
-            }
+        final int oneHotbar = Util.HOTBAR_UNIT_LENGTH;
+        final int half = 91;
+        final int height = Util.HOTBAR_UNIT_HEIGHT;
+        int center = this.screenWidth / 2;
+        int x0 = center - rows * half;
+        int x1 = x0 + rows * oneHotbar;
 
-            if (this.minecraft.options.attackIndicator().get() == AttackIndicatorStatus.HOTBAR) {
-                float attackStrengthScale = this.minecraft.player.getAttackStrengthScale(0.0F);
-                if (attackStrengthScale < 1.0F) {
-                    int y = graphics.guiHeight() - 20;
-                    int x = x1 + 6;
-                    if (offhandArm == HumanoidArm.RIGHT) {
-                        x = x0 - 22;
-                    }
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.setShaderTexture(0, Util.WIDGETS_LOCATION);
+        RenderSystem.enableBlend();
 
-                    int progress = (int)(attackStrengthScale * 19.0F);
-                    graphics.blitSprite(RenderPipelines.GUI_TEXTURED, HOTBAR_ATTACK_INDICATOR_BACKGROUND_SPRITE, x, y, 18, 18);
-                    graphics.blitSprite(
-                            RenderPipelines.GUI_TEXTURED, HOTBAR_ATTACK_INDICATOR_PROGRESS_SPRITE, 18, 18, 0, 18 - progress, x, y + 18 - progress, 18, progress
-                    );
-                }
+        // backgrounds
+        for (int i = 0; i < rows; i++) {
+            this.blit(poseStack, x0 + i * oneHotbar, this.screenHeight - height, 0, 0, oneHotbar, height);
+        }
+
+        // selection frame at the logical selected slot
+        int logicalSelected = Mth.clamp(HotbaaaarClient.getActiveLogicalRow(), 0, rows - 1) * 9 + inv.selected;
+        this.blit(poseStack, x0 - 1 + logicalSelected * 20 + (logicalSelected / 9 * 2), this.screenHeight - height - 1, 0, 22, 24, 22);
+
+        // offhand frame
+        if (!offhand.isEmpty()) {
+            if (offhandArm == HumanoidArm.LEFT) {
+                this.blit(poseStack, x0 - 29, this.screenHeight - 23, 24, 22, 29, 24);
+            } else {
+                this.blit(poseStack, x1, this.screenHeight - 23, 53, 22, 29, 24);
             }
         }
+
+        // items, read from the physical slot that currently holds each logical position
+        int seed = 1;
+        for (int i = 0; i < rows * 9; i++) {
+            int logicalRow = i / 9;
+            int col = i % 9;
+            int physicalSlot = HotbaaaarClient.physicalRowOfLogical(logicalRow) * 9 + col;
+            int x = x0 + i * 20 + 3 + (i / 9 * 2);
+            int y = this.screenHeight - 16 - 3;
+            this.renderSlot(x, y, partialTick, player, inv.items.get(physicalSlot), seed++);
+        }
+
+        // offhand item
+        if (!offhand.isEmpty()) {
+            int y = this.screenHeight - 16 - 3;
+            if (offhandArm == HumanoidArm.LEFT) {
+                this.renderSlot(x0 - 26, y, partialTick, player, offhand, seed++);
+            } else {
+                this.renderSlot(x1 + 10, y, partialTick, player, offhand, seed++);
+            }
+        }
+
+        // attack indicator
+        if (this.minecraft.options.attackIndicator().get() == AttackIndicatorStatus.HOTBAR) {
+            float scale = this.minecraft.player.getAttackStrengthScale(0.0F);
+            if (scale < 1.0F) {
+                int y = this.screenHeight - 20;
+                int x = (offhandArm == HumanoidArm.RIGHT) ? x0 - 22 : x1 + 6;
+                RenderSystem.setShaderTexture(0, Util.GUI_ICONS_LOCATION);
+                int progress = (int) (scale * 19.0F);
+                RenderSystem.enableBlend();
+                RenderSystem.defaultBlendFunc();
+                this.blit(poseStack, x, y, 36, 94, 18, 18);
+                this.blit(poseStack, x, y + 18 - progress, 52, 94 + 18 - progress, 18, progress);
+            }
+        }
+
+        ci.cancel();
     }
 }
