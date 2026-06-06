@@ -20,8 +20,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          json=$(gh api "repos/${{ github.repository }}/branches?per_page=100" \
-            --jq '[.[].name | select(startswith("mc/"))]')
+          names=$(gh api "repos/${{ github.repository }}/branches?per_page=100" \
+            --jq '.[].name' | { grep '^mc/' || true; })
+          if [ -z "$names" ]; then
+            json='[]'
+          else
+            json=$(printf '%s\n' "$names" | jq -R . | jq -cs .)
+          fi
           echo "Discovered target branches: $json"
           echo "branches=$json" >> "$GITHUB_OUTPUT"
 
