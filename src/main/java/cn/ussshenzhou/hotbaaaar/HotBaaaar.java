@@ -1,9 +1,10 @@
 package cn.ussshenzhou.hotbaaaar;
 
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
 
 /**
- * Client-only "super long hotbar" mod for 1.19.2 Forge.
+ * Client-only "super long hotbar" mod for 1.21.1 NeoForge.
  * <p>
  * All behaviour lives in client-side mixins ({@code GuiMixin}, {@code InventoryMixin},
  * {@code MinecraftMixin}) and {@code cn.ussshenzhou.hotbaaaar.client.HotbaaaarClient}.
@@ -15,6 +16,6 @@ import net.minecraftforge.fml.common.Mod;
 public class HotBaaaar {
     public static final String MOD_ID = "hotbaaaar";
 
-    public HotBaaaar() {
+    public HotBaaaar(IEventBus modEventBus) {
     }
 }
