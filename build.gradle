@@ -66,11 +66,14 @@ mixin {
 
 repositories {
     mavenLocal()
+    maven { url = 'https://maven.neoforged.net/releases' }
     maven { url = 'https://jitpack.io' }
 }
 
 dependencies {
-    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    // NeoForge 1.20.1 is the legacy line: it forked Forge 47.1.x (still net.minecraftforge packages,
+    // SRG runtime, ForgeGradle-compatible userdev), published as net.neoforged:forge.
+    minecraft "net.neoforged:forge:${neo_version}"
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
 
