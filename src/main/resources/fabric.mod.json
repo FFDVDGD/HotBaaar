@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "hotbaaaar",
+  "version": "${version}",
+  "name": "HotBaaaar",
+  "description": "Super long hotbar, client-side only. Scroll past the edge to flip the active row into the real hotbar.",
+  "authors": ["USS_Shenzhou"],
+  "license": "GNU GPL 3.0",
+  "icon": "hotbaaaar.png",
+  "environment": "client",
+  "mixins": [
+    {
+      "config": "hotbaaaar.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.18.2",
+    "java": ">=17"
+  }
+}
