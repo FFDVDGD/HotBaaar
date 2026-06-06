@@ -112,7 +112,7 @@ public abstract class GuiMixin extends GuiComponent {
         }
 
         // attack indicator
-        if (this.minecraft.options.attackIndicator().get() == AttackIndicatorStatus.HOTBAR) {
+        if (this.minecraft.options.attackIndicator == AttackIndicatorStatus.HOTBAR) {
             float scale = this.minecraft.player.getAttackStrengthScale(0.0F);
             if (scale < 1.0F) {
                 int y = this.screenHeight - 20;
