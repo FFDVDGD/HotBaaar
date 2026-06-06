@@ -106,7 +106,8 @@ tasks.named('jar', Jar).configure {
                 'MixinConfigs'            : "${mod_id}.mixins.json"
         ])
     }
-    finalizedBy 'reobfJar'
+    // Forge 1.20.6+/1.21 runs on official Mojang mappings, so ForgeGradle creates no reobfJar task and
+    // the plain jar is already in the production namespace (no SRG reobfuscation needed).
 }
 
 publishing {
