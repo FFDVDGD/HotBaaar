@@ -16,9 +16,13 @@ import net.minecraft.world.inventory.ClickType;
  * SWAP clicks (which a vanilla server accepts), so no server-side mod is required.
  * <p>
  * Items are rendered at fixed <i>logical</i> positions; {@link #physicalOfLogical} tracks which
- * physical row currently holds each logical row so the swap stays invisible. We never auto-restore
- * the inventory order; we only reset this internal map (see {@link #resetMapping()}) when a container
- * screen opens or the player instance changes, so external rearrangement can't desync the view.
+ * physical row currently holds each logical row so the swap stays invisible on the HUD.
+ * <p>
+ * When the player opens their own inventory we {@link #restoreCanonical() restore} the real slot order
+ * so the inventory screen looks normal, and when it closes we re-apply the active row so the held item
+ * is preserved (see {@link #onInventoryOpen()} / {@link #onInventoryClose()}). Foreign containers
+ * (chests) and creative keep the previous behaviour ({@link #resetMapping()}), since we cannot safely
+ * issue player-inventory clicks while another container is open.
  *
  * @author USS_Shenzhou
  */
@@ -33,6 +37,10 @@ public class HotbaaaarClient {
     private static int activeLogicalRow = 0;
 
     private static Player lastPlayer = null;
+
+    /** While the player's own inventory screen is open we restore canonical order; remember what to re-apply. */
+    private static boolean restoredForInventory = false;
+    private static int savedActiveRow = 0;
 
     private HotbaaaarClient() {
     }
@@ -73,12 +81,89 @@ public class HotbaaaarClient {
         Player p = Minecraft.getInstance().player;
         if (p != lastPlayer) {
             lastPlayer = p;
+            restoredForInventory = false;
             resetMapping();
         }
         if (activeLogicalRow >= getRows()) {
             resetMapping();
         }
     }
+
+    // --- inventory-screen open/close: restore on open, re-apply on close -------------------------
+
+    /** Player's own inventory opened: remember the active row and physically restore canonical order. */
+    public static void onInventoryOpen() {
+        if (restoredForInventory) {
+            return;
+        }
+        savedActiveRow = activeLogicalRow;
+        restoreCanonical();
+        restoredForInventory = true;
+    }
+
+    /** Player's own inventory closed: re-apply the saved active row so the held item is preserved. */
+    public static void onInventoryClose() {
+        if (!restoredForInventory) {
+            return;
+        }
+        restoredForInventory = false;
+        if (savedActiveRow > 0 && savedActiveRow < getRows()) {
+            activateLogicalRow(savedActiveRow);
+        }
+    }
+
+    /** A foreign container (chest, creative, ...) opened: we can't safely restore, so just resync the map. */
+    public static void onForeignContainer() {
+        restoredForInventory = false;
+        resetMapping();
+    }
+
+    /** Physically swap the inventory rows back to their home positions (identity), via the hotbar row. */
+    public static void restoreCanonical() {
+        // Selection-sort each physical position using the hotbar row (physical 0) as the pivot/buffer.
+        for (int i = 1; i < MAX_ROWS; i++) {
+            if (logicalAtPhysical(i) == i) {
+                continue;
+            }
+            if (logicalAtPhysical(0) != i) {
+                // bring logical row i to the hotbar first
+                if (!swapWithHotbarTracked(physicalOfLogical[i])) {
+                    break;
+                }
+            }
+            // place logical row i at its home physical row i
+            if (!swapWithHotbarTracked(i)) {
+                break;
+            }
+        }
+        activeLogicalRow = logicalAtPhysical(0);
+    }
+
+    private static int logicalAtPhysical(int physical) {
+        for (int l = 0; l < MAX_ROWS; l++) {
+            if (physicalOfLogical[l] == physical) {
+                return l;
+            }
+        }
+        return physical;
+    }
+
+    /** Swap physical row {@code p} with the hotbar (physical 0) and update the tracking map. */
+    private static boolean swapWithHotbarTracked(int p) {
+        if (p == 0) {
+            return true;
+        }
+        if (!swapPhysicalRowWithHotbar(p)) {
+            return false;
+        }
+        int a = logicalAtPhysical(0);
+        int b = logicalAtPhysical(p);
+        physicalOfLogical[a] = p;
+        physicalOfLogical[b] = 0;
+        return true;
+    }
+
+    // --- scrolling ------------------------------------------------------------------------------
 
     /**
      * Replacement for vanilla {@code Inventory.swapPaint}: glide the selection within the active row,
@@ -144,7 +229,8 @@ public class HotbaaaarClient {
 
     /**
      * Swap physical row {@code physical} (1..3) with the real hotbar (physical row 0) via nine SWAP
-     * container clicks against the player inventory menu. Only valid while no other screen is open.
+     * container clicks against the player inventory menu. Only valid while no other screen is open
+     * (or while the player's own inventory screen is open, which keeps container id 0 active).
      *
      * @return true if the swap was performed (state should be updated), false otherwise.
      */
