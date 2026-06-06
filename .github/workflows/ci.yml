@@ -35,7 +35,11 @@ jobs:
       - name: Build
         run: |
           chmod +x ./gradlew
-          ./gradlew build --no-daemon --stacktrace
+          # Mark CI jars distinctly (e.g. hotbaaaar-1.21.1-forge-ci-a1b2c3d.jar) so they're never
+          # mistaken for a release build; -P overrides the in-repo dev mod_version.
+          base="$(grep '^mod_version=' gradle.properties | cut -d= -f2)"
+          base="${base%-*}"
+          ./gradlew build --no-daemon --stacktrace -Pmod_version="${base}-ci-${GITHUB_SHA:0:7}"
 
       - name: Compute artifact name
         id: meta
