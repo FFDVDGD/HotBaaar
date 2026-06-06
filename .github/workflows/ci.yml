@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - 'mc/**'
+  pull_request:
+    branches:
+      - 'mc/**'
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read JDK version
+        id: jdk
+        run: echo "version=$(cat .github/ci/java-version 2>/dev/null || echo 21)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up JDK ${{ steps.jdk.outputs.version }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ steps.jdk.outputs.version }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build --no-daemon --stacktrace
+
+      - name: Compute artifact name
+        id: meta
+        run: echo "name=$(echo '${{ github.ref_name }}' | tr '/:' '__')" >> "$GITHUB_OUTPUT"
+
+      - name: Upload jars
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.meta.outputs.name }}-jars
+          path: |
+            build/libs/*.jar
+            !build/libs/*-sources.jar
+          if-no-files-found: error

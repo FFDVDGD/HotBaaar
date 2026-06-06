@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  # Discover every target branch (mc/<version>-<loader>) so new ports are picked up automatically.
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      branches: ${{ steps.list.outputs.branches }}
+    steps:
+      - name: List mc/* branches
+        id: list
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          json=$(gh api "repos/${{ github.repository }}/branches?per_page=100" \
+            --jq '[.[].name | select(startswith("mc/"))]')
+          echo "Discovered target branches: $json"
+          echo "branches=$json" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: discover
+    if: needs.discover.outputs.branches != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: ${{ fromJson(needs.discover.outputs.branches) }}
+    steps:
+      - name: Checkout ${{ matrix.branch }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+
+      - name: Read JDK version
+        id: jdk
+        run: echo "version=$(cat .github/ci/java-version 2>/dev/null || echo 21)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up JDK ${{ steps.jdk.outputs.version }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ steps.jdk.outputs.version }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build --no-daemon --stacktrace
+
+      - name: Compute artifact name
+        id: meta
+        run: echo "name=$(echo '${{ matrix.branch }}' | tr '/:' '__')" >> "$GITHUB_OUTPUT"
+
+      - name: Upload jars
+        uses: actions/upload-artifact@v4
+        with:
+          name: jars-${{ steps.meta.outputs.name }}
+          path: |
+            build/libs/*.jar
+            !build/libs/*-sources.jar
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all jars
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: jars-*
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*.jar
+          generate_release_notes: true
+          fail_on_unmatched_files: true
