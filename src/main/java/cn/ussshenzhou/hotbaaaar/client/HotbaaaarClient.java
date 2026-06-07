@@ -180,7 +180,7 @@ public class HotbaaaarClient {
             return;
         }
         tickSanity();
-        Inventory inv = player.getInventory();
+        Inventory inv = player.inventory;
         int newSelected = inv.selected - dir;
         if (newSelected < 0) {
             // past the left edge -> previous row

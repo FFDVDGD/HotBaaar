@@ -8,7 +8,6 @@ import net.minecraft.client.AttackIndicatorStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiComponent;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.Inventory;
@@ -23,8 +22,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Renders the extended hotbar: up to four 9-slot rows laid out as one wide strip, with items drawn at
- * fixed logical positions (see {@link HotbaaaarClient}). Faithfully reproduces the vanilla 1.19.2
+ * fixed logical positions (see {@link HotbaaaarClient}). Faithfully reproduces the vanilla 1.16.5
  * hotbar (background, selection frame, offhand slot, attack indicator) generalised to N rows.
+ * <p>
+ * Loom's official Mojang mappings give 1.16.5 modern class names (Gui/GuiComponent/PoseStack/...), so
+ * this is almost identical to the later loaders' GuiMixin. The only real differences are 1.16.5 API:
+ * it predates the 1.17 core-shader rework (so texture setup uses {@code TextureManager.bind} +
+ * {@code RenderSystem.color4f}, not {@code RenderSystem.setShader*}); {@code renderSlot} has no seed
+ * arg; and {@code getCameraPlayer}/{@code renderSlot} are private (shadowed with stub bodies).
  *
  * @author USS_Shenzhou
  */
@@ -42,10 +47,14 @@ public abstract class GuiMixin extends GuiComponent {
     private int screenHeight;
 
     @Shadow
-    protected abstract Player getCameraPlayer();
+    private Player getCameraPlayer() {
+        throw new AssertionError();
+    }
 
     @Shadow
-    protected abstract void renderSlot(int x, int y, float partialTick, Player player, ItemStack stack, int seed);
+    private void renderSlot(int x, int y, float partialTick, Player player, ItemStack stack) {
+        throw new AssertionError();
+    }
 
     @Inject(method = "renderHotbar", at = @At("HEAD"), cancellable = true)
     private void hotbaaaar$renderHotbar(float partialTick, PoseStack poseStack, CallbackInfo ci) {
@@ -54,7 +63,7 @@ public abstract class GuiMixin extends GuiComponent {
             return;
         }
         HotbaaaarClient.tickSanity();
-        Inventory inv = player.getInventory();
+        Inventory inv = player.inventory;
         int rows = HotbaaaarClient.getRows();
 
         ItemStack offhand = player.getOffhandItem();
@@ -67,9 +76,8 @@ public abstract class GuiMixin extends GuiComponent {
         int x0 = center - rows * half;
         int x1 = x0 + rows * oneHotbar;
 
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderSystem.setShaderTexture(0, Util.WIDGETS_LOCATION);
+        RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+        this.minecraft.getTextureManager().bind(Util.WIDGETS_LOCATION);
         RenderSystem.enableBlend();
 
         // backgrounds
@@ -91,23 +99,22 @@ public abstract class GuiMixin extends GuiComponent {
         }
 
         // items, read from the physical slot that currently holds each logical position
-        int seed = 1;
         for (int i = 0; i < rows * 9; i++) {
             int logicalRow = i / 9;
             int col = i % 9;
             int physicalSlot = HotbaaaarClient.physicalRowOfLogical(logicalRow) * 9 + col;
             int x = x0 + i * 20 + 3 + (i / 9 * 2);
             int y = this.screenHeight - 16 - 3;
-            this.renderSlot(x, y, partialTick, player, inv.items.get(physicalSlot), seed++);
+            this.renderSlot(x, y, partialTick, player, inv.items.get(physicalSlot));
         }
 
         // offhand item
         if (!offhand.isEmpty()) {
             int y = this.screenHeight - 16 - 3;
             if (offhandArm == HumanoidArm.LEFT) {
-                this.renderSlot(x0 - 26, y, partialTick, player, offhand, seed++);
+                this.renderSlot(x0 - 26, y, partialTick, player, offhand);
             } else {
-                this.renderSlot(x1 + 10, y, partialTick, player, offhand, seed++);
+                this.renderSlot(x1 + 10, y, partialTick, player, offhand);
             }
         }
 
@@ -117,7 +124,7 @@ public abstract class GuiMixin extends GuiComponent {
             if (scale < 1.0F) {
                 int y = this.screenHeight - 20;
                 int x = (offhandArm == HumanoidArm.RIGHT) ? x0 - 22 : x1 + 6;
-                RenderSystem.setShaderTexture(0, Util.GUI_ICONS_LOCATION);
+                this.minecraft.getTextureManager().bind(Util.GUI_ICONS_LOCATION);
                 int progress = (int) (scale * 19.0F);
                 RenderSystem.enableBlend();
                 RenderSystem.defaultBlendFunc();

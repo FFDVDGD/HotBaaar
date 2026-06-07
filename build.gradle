@@ -10,7 +10,7 @@ base {
     archivesName = mod_id
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+java.toolchain.languageVersion = JavaLanguageVersion.of(8)
 
 loom {
     // Generate the mixin refmap under the name our mixins.json references (keeps it identical to the
