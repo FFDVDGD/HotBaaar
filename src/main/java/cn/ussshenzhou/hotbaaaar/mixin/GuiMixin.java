@@ -45,7 +45,7 @@ public abstract class GuiMixin extends GuiComponent {
     protected abstract Player getCameraPlayer();
 
     @Shadow
-    protected abstract void renderSlot(int x, int y, float partialTick, Player player, ItemStack stack, int seed);
+    protected abstract void renderSlot(int x, int y, float partialTick, Player player, ItemStack stack);
 
     @Inject(method = "renderHotbar", at = @At("HEAD"), cancellable = true)
     private void hotbaaaar$renderHotbar(float partialTick, PoseStack poseStack, CallbackInfo ci) {
@@ -91,23 +91,22 @@ public abstract class GuiMixin extends GuiComponent {
         }
 
         // items, read from the physical slot that currently holds each logical position
-        int seed = 1;
         for (int i = 0; i < rows * 9; i++) {
             int logicalRow = i / 9;
             int col = i % 9;
             int physicalSlot = HotbaaaarClient.physicalRowOfLogical(logicalRow) * 9 + col;
             int x = x0 + i * 20 + 3 + (i / 9 * 2);
             int y = this.screenHeight - 16 - 3;
-            this.renderSlot(x, y, partialTick, player, inv.items.get(physicalSlot), seed++);
+            this.renderSlot(x, y, partialTick, player, inv.items.get(physicalSlot));
         }
 
         // offhand item
         if (!offhand.isEmpty()) {
             int y = this.screenHeight - 16 - 3;
             if (offhandArm == HumanoidArm.LEFT) {
-                this.renderSlot(x0 - 26, y, partialTick, player, offhand, seed++);
+                this.renderSlot(x0 - 26, y, partialTick, player, offhand);
             } else {
-                this.renderSlot(x1 + 10, y, partialTick, player, offhand, seed++);
+                this.renderSlot(x1 + 10, y, partialTick, player, offhand);
             }
         }
 
