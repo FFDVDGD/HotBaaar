@@ -20,11 +20,13 @@
 
 本仓库用**分支矩阵**管理：每个 `mc/<版本>-<加载器>` 分支都是一个独立可构建的工程，`master` 只作为放置 CI / 文档的 hub。
 
-|  | 1.18.2 | 1.19.2 | 1.20.1 | 1.21.1 |
-|--|:--:|:--:|:--:|:--:|
-| **Forge** | ✅ | ✅ | ✅ | ✅ |
-| **NeoForge** | — | — | ✅ | ✅ |
-| **Fabric** | ✅ | ✅ | ✅ | ✅ |
+|  | 1.16.5 | 1.18.2 | 1.19.2 | 1.20.1 | 1.21.1 | 26.1.2 |
+|--|:--:|:--:|:--:|:--:|:--:|:--:|
+| **Forge** | ✅ | ✅ | ✅ | ✅ | ✅ | ✖️ |
+| **NeoForge** | — | — | — | ✅ | ✅ | ✅ |
+| **Fabric** | ✅ | ✅ | ✅ | ✅ | ✅ | ✖️ |
+
+> ✅ 已构建；— 该加载器在此 MC 版本不存在；✖️ 上游工具链尚未支持（ForgeGradle / Fabric Loom 暂不支持 Gradle 9 / Java 25），故 26.1.2 目前仅 NeoForge 可用。
 
 下载见 [Releases](../../releases)；构建说明与如何新增目标见 [BUILDING.md](BUILDING.md)。
 
@@ -34,7 +36,7 @@
 
 本 fork：
 - **纯客户端**——用「翻行」技巧绕过服务端对「手持哪一格」的校验，**服务器不用装**；
-- 扩展为 **Forge / NeoForge / Fabric × 1.18.2 / 1.19.2 / 1.20.1 / 1.21.1** 的矩阵。
+- 扩展为 **Forge / NeoForge / Fabric × 1.16.5 / 1.18.2 / 1.19.2 / 1.20.1 / 1.21.1 / 26.1.2** 的矩阵。
 
 ### 致谢
 
@@ -59,11 +61,13 @@ Scrolling past the edge of the current row auto-"flips" rows: that whole row is 
 
 Managed as a **branch matrix**: every `mc/<version>-<loader>` branch is a standalone buildable project, while `master` is just a hub holding the CI / docs.
 
-|  | 1.18.2 | 1.19.2 | 1.20.1 | 1.21.1 |
-|--|:--:|:--:|:--:|:--:|
-| **Forge** | ✅ | ✅ | ✅ | ✅ |
-| **NeoForge** | — | — | ✅ | ✅ |
-| **Fabric** | ✅ | ✅ | ✅ | ✅ |
+|  | 1.16.5 | 1.18.2 | 1.19.2 | 1.20.1 | 1.21.1 | 26.1.2 |
+|--|:--:|:--:|:--:|:--:|:--:|:--:|
+| **Forge** | ✅ | ✅ | ✅ | ✅ | ✅ | ✖️ |
+| **NeoForge** | — | — | — | ✅ | ✅ | ✅ |
+| **Fabric** | ✅ | ✅ | ✅ | ✅ | ✅ | ✖️ |
+
+> ✅ built; — loader doesn't exist for that MC version; ✖️ upstream toolchain not yet supported (ForgeGradle / Fabric Loom don't support Gradle 9 / Java 25 yet), so 26.1.2 is currently NeoForge-only.
 
 Downloads: [Releases](../../releases). Building / adding targets: [BUILDING.md](BUILDING.md).
 
@@ -73,7 +77,7 @@ The original [USS-Shenzhou/HotBaaar](https://github.com/USS-Shenzhou/HotBaaar) i
 
 This fork:
 - is **client-only** — it uses the row-flip trick to work around the server's held-slot validation, so **no server install is needed**;
-- expands into a **Forge / NeoForge / Fabric × 1.18.2 / 1.19.2 / 1.20.1 / 1.21.1** matrix.
+- expands into a **Forge / NeoForge / Fabric × 1.16.5 / 1.18.2 / 1.19.2 / 1.20.1 / 1.21.1 / 26.1.2** matrix.
 
 ### Credits
 
