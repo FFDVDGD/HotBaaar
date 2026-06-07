@@ -2,9 +2,9 @@ package cn.ussshenzhou.hotbaaaar.mixin;
 
 import cn.ussshenzhou.hotbaaaar.client.HotbaaaarClient;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.inventory.ContainerScreen;
+import net.minecraft.client.gui.screen.inventory.InventoryScreen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -35,7 +35,7 @@ public class MinecraftMixin {
             HotbaaaarClient.onInventoryOpen();
         } else if (old instanceof InventoryScreen) {
             HotbaaaarClient.onInventoryClose();
-        } else if (newScreen instanceof AbstractContainerScreen) {
+        } else if (newScreen instanceof ContainerScreen) {
             HotbaaaarClient.onForeignContainer();
         }
     }

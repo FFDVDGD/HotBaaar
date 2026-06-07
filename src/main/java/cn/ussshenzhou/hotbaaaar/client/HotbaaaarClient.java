@@ -1,11 +1,11 @@
 package cn.ussshenzhou.hotbaaaar.client;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
-import net.minecraft.util.Mth;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.container.ClickType;
+import net.minecraft.network.play.client.CHeldItemChangePacket;
+import net.minecraft.util.math.MathHelper;
 
 /**
  * Client-only state and logic for the "super long hotbar".
@@ -36,7 +36,7 @@ public class HotbaaaarClient {
     /** The logical row whose items currently sit in the real hotbar (physical row 0). */
     private static int activeLogicalRow = 0;
 
-    private static Player lastPlayer = null;
+    private static PlayerEntity lastPlayer = null;
 
     /** While the player's own inventory screen is open we restore canonical order; remember what to re-apply. */
     private static boolean restoredForInventory = false;
@@ -62,7 +62,7 @@ public class HotbaaaarClient {
         if (mc.getWindow() == null) {
             return 1;
         }
-        return Mth.clamp(mc.getWindow().getGuiScaledWidth() / 182, 1, MAX_ROWS);
+        return MathHelper.clamp(mc.getWindow().getGuiScaledWidth() / 182, 1, MAX_ROWS);
     }
 
     /** Reset the logical-to-physical map to identity without moving any items. */
@@ -78,7 +78,7 @@ public class HotbaaaarClient {
      * or when the window shrank below the active row. Called from rendering and scrolling.
      */
     public static void tickSanity() {
-        Player p = Minecraft.getInstance().player;
+        PlayerEntity p = Minecraft.getInstance().player;
         if (p != lastPlayer) {
             lastPlayer = p;
             restoredForInventory = false;
@@ -171,7 +171,7 @@ public class HotbaaaarClient {
      */
     public static void onScroll(double direction) {
         Minecraft mc = Minecraft.getInstance();
-        Player player = mc.player;
+        PlayerEntity player = mc.player;
         if (player == null) {
             return;
         }
@@ -180,7 +180,7 @@ public class HotbaaaarClient {
             return;
         }
         tickSanity();
-        Inventory inv = player.getInventory();
+        PlayerInventory inv = player.inventory;
         int newSelected = inv.selected - dir;
         if (newSelected < 0) {
             // past the left edge -> previous row
@@ -193,11 +193,11 @@ public class HotbaaaarClient {
         }
     }
 
-    private static void setSelected(Inventory inv, int slot) {
+    private static void setSelected(PlayerInventory inv, int slot) {
         inv.selected = slot;
         Minecraft mc = Minecraft.getInstance();
         if (mc.getConnection() != null) {
-            mc.getConnection().send(new ServerboundSetCarriedItemPacket(slot));
+            mc.getConnection().send(new CHeldItemChangePacket(slot));
         }
     }
 
@@ -239,7 +239,7 @@ public class HotbaaaarClient {
             return true;
         }
         Minecraft mc = Minecraft.getInstance();
-        Player player = mc.player;
+        PlayerEntity player = mc.player;
         if (player == null || mc.gameMode == null) {
             return false;
         }

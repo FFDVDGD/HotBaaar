@@ -1,7 +1,7 @@
 package cn.ussshenzhou.hotbaaaar.mixin;
 
 import cn.ussshenzhou.hotbaaaar.client.HotbaaaarClient;
-import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.entity.player.PlayerInventory;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -14,12 +14,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *
  * @author USS_Shenzhou
  */
-@Mixin(Inventory.class)
+@Mixin(PlayerInventory.class)
 public class InventoryMixin {
 
     @Inject(method = "swapPaint", at = @At("HEAD"), cancellable = true)
     private void hotbaaaar$swapPaint(double direction, CallbackInfo ci) {
-        Inventory self = (Inventory) (Object) this;
+        PlayerInventory self = (PlayerInventory) (Object) this;
         if (self.player.level.isClientSide) {
             HotbaaaarClient.onScroll(direction);
             ci.cancel();

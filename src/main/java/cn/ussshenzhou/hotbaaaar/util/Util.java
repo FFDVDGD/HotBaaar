@@ -1,9 +1,9 @@
 package cn.ussshenzhou.hotbaaaar.util;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.ResourceLocation;
 
 /**
- * 1.19.2 GUI texture sheets and hotbar geometry constants.
+ * 1.16.5 GUI texture sheets and hotbar geometry constants.
  *
  * @author USS_Shenzhou
  */
