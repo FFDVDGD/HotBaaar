@@ -181,7 +181,7 @@ public class HotbaaaarClient {
         }
         tickSanity();
         Inventory inv = player.getInventory();
-        int newSelected = inv.selected - dir;
+        int newSelected = inv.getSelectedSlot() - dir;
         if (newSelected < 0) {
             // past the left edge -> previous row
             setSelected(inv, flipRow(-1) ? ROW - 1 : 0);
@@ -194,7 +194,7 @@ public class HotbaaaarClient {
     }
 
     private static void setSelected(Inventory inv, int slot) {
-        inv.selected = slot;
+        inv.setSelectedSlot(slot);
         Minecraft mc = Minecraft.getInstance();
         if (mc.getConnection() != null) {
             mc.getConnection().send(new ServerboundSetCarriedItemPacket(slot));
