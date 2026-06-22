@@ -1,6 +1,7 @@
 package cn.ussshenzhou.hotbaaaar.mixin;
 
 import cn.ussshenzhou.hotbaaaar.client.HotbaaaarClient;
+import cn.ussshenzhou.hotbaaaar.compat.TweakerooCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
 import org.spongepowered.asm.mixin.Mixin;
@@ -15,6 +16,9 @@ public class InventoryMixin {
     private void hotbaaaar$onScroll(long window, double xOffset, double yOffset, CallbackInfo ci) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null && !mc.player.isSpectator() && mc.screen == null && yOffset != 0) {
+            if (TweakerooCompat.isZoomScrollActive()) {
+                return;
+            }
             HotbaaaarClient.onScroll(yOffset);
             ci.cancel();
         }
