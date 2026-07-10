@@ -28,7 +28,7 @@ public class InventoryMixin {
     )
     private void hotbaaaar$onScroll(long window, double xOffset, double yOffset, CallbackInfo ci) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player != null && !mc.player.isSpectator() && mc.screen == null && yOffset != 0) {
+        if (mc.player != null && !mc.player.isSpectator() && mc.gui.screen() == null && yOffset != 0) {
             HotbaaaarClient.onScroll(yOffset);
             ci.cancel();
         }

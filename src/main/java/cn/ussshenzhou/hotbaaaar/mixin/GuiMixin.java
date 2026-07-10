@@ -5,8 +5,8 @@ import cn.ussshenzhou.hotbaaaar.util.Util;
 import net.minecraft.client.AttackIndicatorStatus;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.Hud;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.HumanoidArm;
@@ -21,13 +21,13 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Renders the extended hotbar on the 1.21.x sprite API: up to four 9-slot rows as one wide strip,
+ * Renders the extended hotbar on the sprite API: up to four 9-slot rows as one wide strip,
  * items drawn at fixed logical positions (see {@link HotbaaaarClient}). Faithfully reproduces the
  * vanilla hotbar (background, selection frame, offhand slot, attack indicator) generalised to N rows.
  *
  * @author USS_Shenzhou
  */
-@Mixin(Gui.class)
+@Mixin(Hud.class)
 public abstract class GuiMixin {
 
     @Shadow
@@ -35,13 +35,17 @@ public abstract class GuiMixin {
     private Minecraft minecraft;
 
     @Shadow
-    protected abstract Player getCameraPlayer();
+    private Player getCameraPlayer() {
+        throw new AssertionError();
+    }
 
     @Shadow
-    protected abstract void renderSlot(GuiGraphics guiGraphics, int x, int y, DeltaTracker deltaTracker, Player player, ItemStack stack, int seed);
+    private void extractSlot(GuiGraphicsExtractor guiGraphics, int x, int y, DeltaTracker deltaTracker, Player player, ItemStack stack, int seed) {
+        throw new AssertionError();
+    }
 
-    @Inject(method = "renderItemHotbar", at = @At("HEAD"), cancellable = true)
-    private void hotbaaaar$renderHotbar(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
+    @Inject(method = "extractItemHotbar", at = @At("HEAD"), cancellable = true)
+    private void hotbaaaar$extractHotbar(GuiGraphicsExtractor guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
         Player player = this.getCameraPlayer();
         if (player == null) {
             return;
@@ -88,16 +92,16 @@ public abstract class GuiMixin {
             int physicalSlot = HotbaaaarClient.physicalRowOfLogical(logicalRow) * 9 + col;
             int x = x0 + i * 20 + 3 + (i / 9 * 2);
             int y = screenHeight - 16 - 3;
-            this.renderSlot(guiGraphics, x, y, deltaTracker, player, inv.getItem(physicalSlot), seed++);
+            this.extractSlot(guiGraphics, x, y, deltaTracker, player, inv.getItem(physicalSlot), seed++);
         }
 
         // offhand item
         if (!offhand.isEmpty()) {
             int y = screenHeight - 16 - 3;
             if (offhandArm == HumanoidArm.LEFT) {
-                this.renderSlot(guiGraphics, x0 - 26, y, deltaTracker, player, offhand, seed++);
+                this.extractSlot(guiGraphics, x0 - 26, y, deltaTracker, player, offhand, seed++);
             } else {
-                this.renderSlot(guiGraphics, x1 + 10, y, deltaTracker, player, offhand, seed++);
+                this.extractSlot(guiGraphics, x1 + 10, y, deltaTracker, player, offhand, seed++);
             }
         }
 

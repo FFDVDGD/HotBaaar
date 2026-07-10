@@ -3,7 +3,7 @@ package cn.ussshenzhou.hotbaaaar.util;
 import net.minecraft.resources.Identifier;
 
 /**
- * 1.21.x GUI hotbar sprites and geometry constants. 1.20.5+ renders the HUD from the sprite atlas,
+ * GUI hotbar sprites and geometry constants. The HUD renders from the sprite atlas,
  * so these are sprite ids (under {@code minecraft:gui/sprites/...}), not raw texture sheets.
  *
  * @author USS_Shenzhou

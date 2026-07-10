@@ -5,7 +5,7 @@ import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 
 /**
  * Client-only state and logic for the "super long hotbar".
@@ -168,6 +168,7 @@ public class HotbaaaarClient {
     /**
      * Replacement for vanilla {@code Inventory.swapPaint}: glide the selection within the active row,
      * and flip to the adjacent row (swapping it into the real hotbar) when scrolling past an edge.
+     * The first and last logical slots are connected, so scrolling wraps around the entire strip.
      */
     public static void onScroll(double direction) {
         Minecraft mc = Minecraft.getInstance();
@@ -203,10 +204,7 @@ public class HotbaaaarClient {
 
     /** @return true if the row was actually flipped. */
     private static boolean flipRow(int delta) {
-        int target = activeLogicalRow + delta;
-        if (target < 0 || target >= getRows()) {
-            return false;
-        }
+        int target = Math.floorMod(activeLogicalRow + delta, getRows());
         return activateLogicalRow(target);
     }
 
@@ -250,7 +248,7 @@ public class HotbaaaarClient {
         for (int col = 0; col < ROW; col++) {
             // InventoryMenu slot index for inventory index (physical*9 + col), physical >= 1, equals the same number.
             int menuSlot = physical * ROW + col;
-            mc.gameMode.handleInventoryMouseClick(0, menuSlot, col, ClickType.SWAP, player);
+            mc.gameMode.handleContainerInput(0, menuSlot, col, ContainerInput.SWAP, player);
         }
         return true;
     }

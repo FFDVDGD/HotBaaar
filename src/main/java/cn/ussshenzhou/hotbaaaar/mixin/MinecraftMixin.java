@@ -1,7 +1,7 @@
 package cn.ussshenzhou.hotbaaaar.mixin;
 
 import cn.ussshenzhou.hotbaaaar.client.HotbaaaarClient;
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *
  * @author USS_Shenzhou
  */
-@Mixin(Minecraft.class)
+@Mixin(Gui.class)
 public class MinecraftMixin {
 
     @Shadow
